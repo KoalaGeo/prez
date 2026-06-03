@@ -118,3 +118,22 @@ def test_resource_anot(client, a_resource_link):
         f"Missing:{(expected_graph - response_graph).serialize()}"
         f"Extra:{(response_graph - expected_graph).serialize()}"
     )
+
+# Integration test mirroring the v4 fix (PR #318), adapted to the v3.8.x
+# test fixtures. Add this function to tests/test_endpoints_catprez.py (it uses
+# the existing `client` and `a_catalog_link` fixtures already defined there).
+#
+# v4 used the fixture name `a_catprez_catalog_link`; in v3.8.x the equivalent
+# fixture is `a_catalog_link`.
+
+
+def test_catalog_no_mediatype(client, a_catalog_link):
+    # An empty Accept header (as sent by Postman/Hopscotch) must not 500.
+    r = client.get(f"{a_catalog_link}", headers={"Accept": ""})
+    assert r.status_code == 200
+
+
+def test_catalog_missing_mediatype(client, a_catalog_link):
+    # No Accept header at all must not 500 either (the v3 frozenset(None) bug).
+    r = client.get(f"{a_catalog_link}")
+    assert r.status_code == 200
