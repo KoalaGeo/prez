@@ -82,9 +82,18 @@ def get_profiles_and_mediatypes(
     requested_profile_token: str = None,
     requested_mediatype: URIRef = None,
 ):
+    # An empty ``classes`` set means the resource has no rdf:type (e.g. the URI
+    # doesn't exist in the triplestore). Building the selection query with an
+    # empty ``VALUES ?class { }`` clause crashes rdflib's SPARQL engine
+    # ("'list' object has no attribute 'name'"), surfacing as a 500. Treat it
+    # the same as "no profiles found" so the caller gets a clean 404 instead.
+    # See https://github.com/RDFLib/prez/issues/380.
+    if not classes:
+        raise NoProfilesException(classes)
     query = select_profile_mediatype(
         classes, requested_profile, requested_profile_token, requested_mediatype
     )
+
     response = profiles_graph_cache.query(query)
     if len(response.bindings[0]) == 0:
         raise NoProfilesException(classes)
