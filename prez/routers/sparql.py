@@ -46,7 +46,12 @@ async def sparql_get_passthrough(
 async def sparql_endpoint_handler(
     query: str, request: Request, repo: Repo, method="GET"
 ):
-    request_mediatype = request.headers.get("accept").split(",")[0]
+    # ``.get("accept")`` returns None when the client sends no Accept header
+    # (e.g. Postman/Hopscotch, some proxies/health checks). Fall back to an
+    # empty string so this doesn't raise AttributeError on ``.split`` and we
+    # simply pass the query through to the triplestore unchanged.
+    # See https://github.com/RDFLib/prez/issues/380.
+    request_mediatype = (request.headers.get("accept") or "").split(",")[0]
     # can't default the MT where not provided as it could be
     # graph (CONSTRUCT like queries) or tabular (SELECT queries)
 
